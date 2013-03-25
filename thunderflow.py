@@ -11,8 +11,12 @@ dt = 0.00001
 Q = namedtuple('Q', 'rho rho_u')
 F = namedtuple('F', 'rho_u rho_usq_p')
 
-def pressure_eos(rho):
-    temperature = 300
+def temperature_eos(rho, e):
+    Cv = 750 #J/(kg K)
+    return e/Cv
+
+def pressure_eos(rho, e):
+    temperature = temperature_eos(rho, e)
     molarmass = 0.030 # kg/mol
     R = 8.3145 # J / (K mol)
     return rho*R*temperature / molarmass
@@ -20,8 +24,9 @@ def pressure_eos(rho):
 def calcF(q):
     rho = q[0]
     velocity = q[1] / rho
-    pressure = pressure_eos(rho)
-    return np.array([rho*velocity, rho*velocity*velocity+pressure])
+    e_internal = q[2]/rho-0.5*pow(velocity,2)
+    pressure = pressure_eos(rho, e_internal)
+    return np.array([rho*velocity, rho*pow(velocity,2)+pressure, (q[2]+pressure)*velocity])
 
 def FORCE(ql, qr):
     fl = calcF(ql)
@@ -33,8 +38,11 @@ def FORCE(ql, qr):
 
 def boundary_f(q):
     #velocity zero, but pressure equal
-    pressure = pressure_eos(q[0])
-    return np.array([0.0, pressure])
+    rho = q[0]
+    velocity = q[1] / rho
+    e_internal = q[2]/rho-0.5*pow(velocity,2)
+    pressure = pressure_eos(rho, e_internal)
+    return np.array([0.0, pressure, 0.0])
 
 def musta_evolve(ql, qr):
     fl = calcF(ql)
@@ -64,9 +72,9 @@ def evolve(qs, substages=0):
     qs[N-1] += (dt/dx)*(f_minus - f_plus)
 
 def initialize():
-    qs = [np.array([1.2, 0.0]) for _ in range(N)]
-    qs[-1] = np.array([12, 0.0])
-    qs[-2] = np.array([12, 0.0])
+    e_init = 750*300
+    qs = [np.array([1.2, 0.0, e_init*1.2]) for _ in range(N)]
+    qs[-1] = np.array([12, 0.0, e_init*12])
+    qs[-2] = np.array([12, 0.0, e_init*12])
     return qs
-
 
