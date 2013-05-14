@@ -8,9 +8,6 @@ length = 5.0
 dx = length/N
 dt = 0.00001
 
-Q = namedtuple('Q', 'rho rho_u')
-F = namedtuple('F', 'rho_u rho_usq_p')
-
 def temperature_eos(rho, e):
     Cv = 750 #J/(kg K)
     return e/Cv
