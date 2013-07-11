@@ -69,9 +69,14 @@ def evolve(qs, substages=0):
     qs[N-1] += (dt/dx)*(f_minus - f_plus)
 
 def initialize():
-    e_init = 750*300
+    e_init = 750*300 #Cv = 750, T = 300K
     qs = [np.array([1.2, 0.0, e_init*1.2]) for _ in range(N)]
-    qs[-1] = np.array([12, 0.0, e_init*12])
+    qs[-1] = np.array([12, 0.0, e_init*12]) #high pressure in two last CVs
     qs[-2] = np.array([12, 0.0, e_init*12])
     return qs
 
+def sim():
+    qs = initialize()
+    while 1:
+        yield np.copy(qs)
+        evolve(qs)
