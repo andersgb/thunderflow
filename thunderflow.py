@@ -75,8 +75,8 @@ def initialize():
     qs[-2] = np.array([12, 0.0, e_init*12])
     return qs
 
-def sim():
+def sim(step_span):
     qs = initialize()
     while 1:
         yield np.copy(qs)
-        evolve(qs)
+        for _ in xrange(step_span): evolve(qs)
