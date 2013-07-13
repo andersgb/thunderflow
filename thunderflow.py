@@ -1,22 +1,51 @@
+# coding=UTF-8
 ## wooot
 
 from collections import namedtuple
 import numpy as np
+from cpp import pythulip
 
-N = 10 #cells
+N = 100 #cells
 length = 5.0
 dx = length/N
 dt = 0.00001
 
-def temperature_eos(rho, e):
+p = pythulip.pythulip('pr_c4', ['nitrogen'])
+pythulip.set_SI_units(p)
+p.calc()
+
+def temperature_eos_ig(rho, e):
     Cv = 750 #J/(kg K)
     return e/Cv
 
-def pressure_eos(rho, e):
-    temperature = temperature_eos(rho, e)
+def pressure_eos_ig(rho, e):
+    temperature = temperature_eos_ig(rho, e)
     molarmass = 0.030 # kg/mol
     R = 8.3145 # J / (K mol)
     return rho*R*temperature / molarmass
+
+def eos_update(q):
+    rho = q[0]
+    vol = dx*1
+    velocity = q[1] / rho
+    E_internal = (q[2] - 0.5*rho*pow(velocity,2))*vol
+    p['var_v'] = vol
+    if p.t.number_of_elements('var_n') > 1:
+        raise Exception('Not generalized to multicomponent')
+    p['var_n'] = rho * p['var_v'][0] / p['cape_molecular_weights'][0]
+    p.calc()
+    pythulip.iterate_x(p, 'state_u', E_internal)
+
+def pressure_eos(rho, e):
+    vol = dx*1
+    p['var_v'] = vol
+    if p.t.number_of_elements('var_n') > 1:
+        raise Exception('Not generalized to multicomponent')
+    p['var_n'] = rho * p['var_v'][0] / p['cape_molecular_weights'][0]
+    p.calc()
+    E = e*rho*vol
+    pythulip.iterate_x(p, 'state_u', E)
+    return p['state_p'][0]
 
 def calcF(q):
     rho = q[0]
@@ -69,10 +98,18 @@ def evolve(qs, substages=0):
     qs[N-1] += (dt/dx)*(f_minus - f_plus)
 
 def initialize():
-    e_init = 750*300 #Cv = 750, T = 300K
-    qs = [np.array([1.2, 0.0, e_init*1.2]) for _ in range(N)]
-    qs[-1] = np.array([12, 0.0, e_init*12]) #high pressure in two last CVs
-    qs[-2] = np.array([12, 0.0, e_init*12])
+    p['var_t'] = 300 # K
+    p['var_v'] = dx*1 # dx*1m² (arbitrary chosen cross section
+    rho = 1.2 #kg/m³
+    p['var_n'] = rho * p['var_v'][0] / p['cape_molecular_weights'][0]
+    p.calc()
+    e_init = p['state_u'][0]
+    qs = [np.array([rho, 0.0, e_init*rho]) for _ in range(N)]
+    rho_high = 12
+    p['var_n'] = rho_high * p['var_v'][0] / p['cape_molecular_weights'][0]
+    p.calc()
+    qs[-1] = np.array([rho_high, 0.0, p['state_u'][0]*rho_high]) #high pressure in two last CVs
+    qs[-2] = np.array([rho_high, 0.0, p['state_u'][0]*rho_high])
     return qs
 
 def sim(step_span):
