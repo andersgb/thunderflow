@@ -99,17 +99,17 @@ def evolve(qs, substages=0):
 
 def initialize():
     p['var_t'] = 300 # K
-    p['var_v'] = dx*1 # dx*1m² (arbitrary chosen cross section
+    vol = dx*1 # dx*1m² (arbitrary chosen cross section
+    p['var_v'] = vol
     rho = 1.2 #kg/m³
-    p['var_n'] = rho * p['var_v'][0] / p['cape_molecular_weights'][0]
+    p['var_n'] = rho * vol / p['cape_molecular_weights'][0]
     p.calc()
-    e_init = p['state_u'][0]
-    qs = [np.array([rho, 0.0, e_init*rho]) for _ in range(N)]
+    qs = [np.array([rho, 0.0, p['state_u'][0]/vol]) for _ in range(N)]
     rho_high = 12
     p['var_n'] = rho_high * p['var_v'][0] / p['cape_molecular_weights'][0]
     p.calc()
-    qs[-1] = np.array([rho_high, 0.0, p['state_u'][0]*rho_high]) #high pressure in two last CVs
-    qs[-2] = np.array([rho_high, 0.0, p['state_u'][0]*rho_high])
+    qs[-1] = np.array([rho_high, 0.0, p['state_u'][0]/vol]) #high pressure in two last CVs
+    qs[-2] = np.array([rho_high, 0.0, p['state_u'][0]/vol])
     return qs
 
 def sim(step_span):
