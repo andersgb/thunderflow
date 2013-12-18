@@ -10,8 +10,11 @@ def eos_var(var, q, ind = 0):
     eos_update(q)
     return p[var][ind]
 
+def velocity(q):
+    return q[1]/q[0]
+
 fig = plt.figure()
-ax = plt.axes(xlim=(0,N), ylim=(0, 700))
+ax = plt.axes(xlim=(0,N), ylim=(-300, 300))
 line, = ax.plot([], [], lw=2)
 
 def init():
@@ -20,12 +23,13 @@ def init():
 
 def animate(i):
     xs = range(0,N)
-    y = [eos_var('state_t', steps[i][x]) for x in xrange(N)]
+    #y = [eos_var('state_p', steps[i][x]) for x in xrange(N)]
+    y = [velocity(steps[i][x]) for x in xrange(N)]
     line.set_data(xs, y)
     return line,
 
 anim = animation.FuncAnimation(fig, animate, init_func=init, frames=200, interval=20, blit=True)
-anim.save('temperature.mp4', fps=30) #, extra_args=['-vcodec', 'libx264'])
+anim.save('velocity.mp4', fps=30) #, extra_args=['-vcodec', 'libx264'])
 
 # # velo0 = [steps[x][0][1]/steps[x][0][0] for x in xrange(num)]
 # # velo1 = [steps[x][1][1]/steps[x][1][0] for x in xrange(num)]
