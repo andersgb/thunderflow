@@ -97,7 +97,8 @@ def evolve(qs, substages=0):
     f_plus = boundary_f(qs[N-1])
     qs[N-1] += (dt/dx)*(f_minus - f_plus)
 
-def initialize():
+def init_example1():
+    """Set an initial state where the last two CVs have a high pressure"""
     p['var_t'] = 300 # K
     vol = dx*1 # dx*1m² (arbitrary chosen cross section
     p['var_v'] = vol
@@ -113,7 +114,7 @@ def initialize():
     return qs
 
 def sim(step_span):
-    qs = initialize()
+    qs = init_example1()
     while 1:
         yield np.copy(qs)
         for _ in xrange(step_span): evolve(qs)
