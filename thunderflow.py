@@ -48,6 +48,7 @@ def pressure_eos(rho, e):
     return p['state_p'][0]
 
 def calcF(q):
+    """ Calculate the f(q) vector """
     rho = q[0]
     velocity = q[1] / rho
     e_internal = q[2]/rho-0.5*pow(velocity,2)
@@ -63,6 +64,7 @@ def FORCE(ql, qr):
     return f_force
 
 def boundary_f(q):
+    """ Given a solved q inside the domain, return a q with boundary conditions """
     #velocity zero, but pressure equal
     rho = q[0]
     velocity = q[1] / rho
@@ -79,6 +81,7 @@ def musta_evolve(ql, qr):
     return ql_new, qr_new
 
 def evolve(qs, substages=0):
+    """ Do a single timestep """
     def find_f(ql_0, qr_0):
         ql = ql_0
         qr = qr_0
@@ -114,6 +117,10 @@ def init_example1():
     return qs
 
 def sim(step_span):
+    #each control volume solves for q = [rho, rho*v, E]
+
+    #qs is a vector containing over all control volumes, with one q
+    #for each. I.e. qs[CV_INDEX][VAR_INDEX]
     qs = init_example1()
     while 1:
         yield np.copy(qs)
