@@ -3,56 +3,33 @@
 
 from collections import namedtuple
 import numpy as np
-from cpp import pythulip
 
 N = 100 #cells
 length = 5.0
 dx = length/N
 dt = 0.00001
 
-p = pythulip.pythulip('pr_c4', ['nitrogen'])
-pythulip.set_SI_units(p)
-p.calc()
+#Use ideal gas eos and constant Cv:
+# e = T/Cv # e is specific internal energy
+# E = rho*e + 0.5*rho*v*v # total energy including kinetic
+
+Cv = 750 #J/(kg K)
+molarmass = 0.030 # kg/mol. Air is ca 30 g/mol
+R = 8.3145 # J / (K mol)
 
 def temperature_eos_ig(rho, e):
-    Cv = 750 #J/(kg K)
     return e/Cv
 
 def pressure_eos_ig(rho, e):
     temperature = temperature_eos_ig(rho, e)
-    molarmass = 0.030 # kg/mol
-    R = 8.3145 # J / (K mol)
     return rho*R*temperature / molarmass
-
-def eos_update(q):
-    rho = q[0]
-    vol = dx*1
-    velocity = q[1] / rho
-    E_internal = (q[2] - 0.5*rho*pow(velocity,2))*vol
-    p['var_v'] = vol
-    if p.t.number_of_elements('var_n') > 1:
-        raise Exception('Not generalized to multicomponent')
-    p['var_n'] = rho * p['var_v'][0] / p['cape_molecular_weights'][0]
-    p.calc()
-    pythulip.iterate_x(p, 'state_u', E_internal)
-
-def pressure_eos(rho, e):
-    vol = dx*1
-    p['var_v'] = vol
-    if p.t.number_of_elements('var_n') > 1:
-        raise Exception('Not generalized to multicomponent')
-    p['var_n'] = rho * p['var_v'][0] / p['cape_molecular_weights'][0]
-    p.calc()
-    E = e*rho*vol
-    pythulip.iterate_x(p, 'state_u', E)
-    return p['state_p'][0]
 
 def calcF(q):
     """ Calculate the f(q) vector """
     rho = q[0]
     velocity = q[1] / rho
     e_internal = q[2]/rho-0.5*pow(velocity,2)
-    pressure = pressure_eos(rho, e_internal)
+    pressure = pressure_eos_ig(rho, e_internal)
     return np.array([rho*velocity, rho*pow(velocity,2)+pressure, (q[2]+pressure)*velocity])
 
 def FORCE(ql, qr):
@@ -69,7 +46,7 @@ def boundary_f(q):
     rho = q[0]
     velocity = q[1] / rho
     e_internal = q[2]/rho-0.5*pow(velocity,2)
-    pressure = pressure_eos(rho, e_internal)
+    pressure = pressure_eos_ig(rho, e_internal)
     return np.array([0.0, pressure, 0.0])
 
 def musta_evolve(ql, qr):
@@ -102,18 +79,16 @@ def evolve(qs, substages=0):
 
 def init_example1():
     """Set an initial state where the last two CVs have a high pressure"""
-    p['var_t'] = 300 # K
-    vol = dx*1 # dx*1m² (arbitrary chosen cross section
-    p['var_v'] = vol
+    T = 300 # K
     rho = 1.2 #kg/m³
-    p['var_n'] = rho * vol / p['cape_molecular_weights'][0]
-    p.calc()
-    qs = [np.array([rho, 0.0, p['state_u'][0]/vol]) for _ in range(N)]
+    E = rho*Cv*T
+    qs = [np.array([rho, 0.0, E]) for _ in range(N)]
+
+    #high pressure in two last CVs:
     rho_high = 12
-    p['var_n'] = rho_high * p['var_v'][0] / p['cape_molecular_weights'][0]
-    p.calc()
-    qs[-1] = np.array([rho_high, 0.0, p['state_u'][0]/vol]) #high pressure in two last CVs
-    qs[-2] = np.array([rho_high, 0.0, p['state_u'][0]/vol])
+    E_high = rho_high*Cv*T
+    qs[-1] = np.array([rho_high, 0.0, E_high])
+    qs[-2] = np.array([rho_high, 0.0, E_high])
     return qs
 
 def sim(step_span):

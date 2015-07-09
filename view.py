@@ -6,15 +6,17 @@ from matplotlib import animation
 resfile = open('results.pkl', 'r')
 steps = pickle.load(resfile)
 
-def eos_var(var, q, ind = 0):
-    eos_update(q)
-    return p[var][ind]
+def pressure(q):
+    rho = q[0]
+    velocity = q[1] / rho
+    e_internal = q[2]/rho-0.5*pow(velocity, 2)
+    return pressure_eos_ig(rho, e_internal)
 
 def velocity(q):
     return q[1]/q[0]
 
 fig = plt.figure()
-ax = plt.axes(xlim=(0,N), ylim=(-300, 300))
+ax = plt.axes(xlim=(0,N), ylim=(1e5, 3e5))
 line, = ax.plot([], [], lw=2)
 
 def init():
@@ -23,13 +25,16 @@ def init():
 
 def animate(i):
     xs = range(0,N)
-    #y = [eos_var('state_p', steps[i][x]) for x in xrange(N)]
-    y = [velocity(steps[i][x]) for x in xrange(N)]
+    y = [pressure(steps[i][x]) for x in xrange(N)]
+    #y = [velocity(steps[i][x]) for x in xrange(N)]
     line.set_data(xs, y)
     return line,
 
+print 'initial pressure one end:'+str(pressure(steps[0][0]))
+print 'initial pressure other end:'+str(pressure(steps[-1][0]))
 anim = animation.FuncAnimation(fig, animate, init_func=init, frames=200, interval=20, blit=True)
-anim.save('velocity.mp4', fps=30) #, extra_args=['-vcodec', 'libx264'])
+plt.show()
+#anim.save('velocity.mp4', fps=30) #, extra_args=['-vcodec', 'libx264'])
 
 # # velo0 = [steps[x][0][1]/steps[x][0][0] for x in xrange(num)]
 # # velo1 = [steps[x][1][1]/steps[x][1][0] for x in xrange(num)]
