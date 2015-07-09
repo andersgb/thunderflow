@@ -1,10 +1,8 @@
 from thunderflow import *
-import pickle
 from matplotlib import pyplot as plt
 from matplotlib import animation
 
-resfile = open('results.pkl', 'r')
-steps = pickle.load(resfile)
+steps = np.load('results.npy')
 
 def pressure(q):
     rho = q[0]
