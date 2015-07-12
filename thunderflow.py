@@ -41,7 +41,7 @@ def FORCE(ql, qr):
     return f_force
 
 def boundary_f(q):
-    """ Given a solved q inside the domain, return a q with boundary conditions """
+    """ Given a solved q inside the domain, return a f(q) with boundary conditions """
     #velocity zero, but pressure equal
     rho = q[0]
     velocity = q[1] / rho
